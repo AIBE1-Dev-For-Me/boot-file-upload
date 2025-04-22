@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title th:text="${title}"></title>
+    <style>
+        @font-face {
+            font-family: 'MarinesBold';
+            src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/2502-1@1.0/MarinesBold.woff2') format('woff2');
+            font-weight: 700;
+            font-style: normal;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            padding: 1rem;
+            font-family: 'MarinesBold', sans-serif;
+        }
+        #file-list img {
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+<h1>파일 업로드</h1>
+<section>
+    <form id="file-form">
+        <label>
+            파일 : <input type="file" id="file-input" accept=".pdf, .xlsx, .xls, image/*">
+        </label>
+        <button type="submit">제출</button>
+    </form>
+</section>
+<section>
+    <section id="file-list"></section>
+</section>
+<script>
+    const fileForm = document.querySelector('#file-form');
+    const fileInput = document.querySelector('#file-input');
+    const fileList = document.querySelector('#file-list');
+    fileForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        console.log(fileInput.files);
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append('files', file);
+        const response = await fetch("/api/file", {
+            method: 'POST',
+            body: formData,
+        });
+        console.log(response.status);
+        if (response.status === 200) {
+            alert("업로드 되었습니다!");
+            fileInput.value = ""; // 업로드된 파일 리셋.
+            await getFiles();
+        } else {
+            alert("업로드가 실패했습니다!");
+        }
+    });
+    async function getFiles() {
+        const response = await fetch("/api/file", {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await response.json();
+        // fileList.innerHTML = JSON.stringify(data);
+        fileList.innerHTML = ""; // 처음에 비워줌
+        for (const file of data) {
+            const fileCard = document.createElement('div');
+            const { filename, uuid, createdAt } = file;
+            if (filename.startsWith('test-img')) {
+                fileCard.innerHTML += `<img src="/api/file/${filename}" alt="${uuid}">`
+            } else {
+                fileCard.innerHTML += `<a download href="/api/file/${filename}">파일 다운로드</a>`
+            }
+            fileCard.innerHTML += `<p>${createdAt}</p>`
+            const button = document.createElement('button');
+            button.textContent = "삭제";
+            button.addEventListener('click', async () => {
+                const response = await fetch(`/api/file/${uuid}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (response.status === 204) {
+                    alert("삭제 성공!")
+                } else {
+                    alert("삭제 실패!")
+                }
+                await getFiles();
+            })
+            fileCard.appendChild(button);
+            fileList.appendChild(fileCard);
+        }
+    }
+    document.addEventListener('DOMContentLoaded', async () => {
+        await getFiles();
+    });
+</script>
+</body>
+</html>

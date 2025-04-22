@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: oot-file-upload
+  profiles:
+    active: dev
