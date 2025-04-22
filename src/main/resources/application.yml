@@ -1,5 +1,5 @@
 spring:
   application:
-    name: oot-file-upload
+    name: boot-file-upload
   profiles:
     active: dev
